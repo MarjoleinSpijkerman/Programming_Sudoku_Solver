@@ -4,6 +4,18 @@ import wave
 import sounddevice as sd
 from scipy.io.wavfile import write
 import numpy as np
+import sklearn 
+#from sklearn import hmm
+from hmmlearn.hmm import GMMHMM
+from librosa.feature import mfcc
+import warnings
+import os
+from hmmlearn import hmm
+import numpy as np
+from librosa.feature import mfcc
+import librosa
+import random
+import pickle
 
 root = Tk()
 root.title('Sudoku')
@@ -104,35 +116,64 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 
 #OPEN MODEL
-with open('model.pkl', 'rb') as f:
-	clf2 = pickle.load(f)
+with open('model_hmm2.pkl', 'rb') as f:
+	hmmModels = pickle.load(f)
 
+	
+from at16k.api import SpeechToText
+
+#https://github.com/msnmkh/Spoken-Digit-Recognition/blob/master/SDR.py
 
 #RECORDING OF THE AUDIO
 def record_audio():
-	fs = 44100	# Sample rate
+	fs = 16000	# Sample rate
 	seconds = 3	 # Duration of recording
 
-	my_recording = sd.rec(int(seconds * fs), samplerate=fs, channels=2)
+	my_recording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
 	sd.wait()  # Wait until recording is finished
-	my_recording = convert_to_mono(my_recording)
-	my_recording = cut_silence(my_recording)
+	write('output.wav', fs, my_recording)  # Save as WAV file 
 	
-	arr = []
-	arr.append(my_recording)
-	arr = np.array(arr)
-	print(arr.shape)
+	wave, sample_rate =  librosa.load('output.wav')
+	mfcc_features = mfcc(wave, sample_rate).T
 	
-	solution = clf2.predict(arr)
+	#mfcc_features = mfcc(my_recording, fs)
+	scoreList = {}
+	for model_label in hmmModels.keys():
+		model = hmmModels[model_label]
+		score = model.score(mfcc_features)
+		scoreList[model_label] = score
+	predict = max(scoreList, key=scoreList.get)
+	
+	
+	#sd.wait()
+	
+	#STT = SpeechToText('en_16k')
+	#results = STT('output.wav')
+	
+	buttons[current_button.current_button_col][current_button.current_button_row]['text'] = predict
+	
+	#print("This is the solution:")
+	#print(results['text'])
+	
+	
+	#my_recording = convert_to_mono(my_recording)
+	#my_recording = cut_silence(my_recording)
+	
+	#arr = []
+	#arr.append(my_recording)
+	#arr = np.array(arr)
+	#print(arr.shape)
+	
+	#solution = clf2.predict(arr)
 	
 	
 	#TRY TO ESTIMATE THE NUMBER
 	#UPDATE THE NUMBER
 	
 	
-	#write('output.wav', fs, myrecording)  # Save as WAV file 
+	
 	#print("Finished recording :)")
-	buttons[current_button.current_button_col][current_button.current_button_row]['text'] = solution
+	
 
 button_rec = Button(root, text='Record audio', command=record_audio)
 button_rec.place(x=800, y=400)
