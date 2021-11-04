@@ -25,6 +25,103 @@ root.state('zoomed')
 #audio MNIST https://www.kaggle.com/alanchn31/free-spoken-digits
 # https://github.com/at16k/at16k
 
+
+class Sudoku:
+	def __init__(self):
+		self.sudoku = [[0,0,0,0,0,0,0,0,0],
+					   [0,0,0,0,0,0,0,0,0],
+					   [0,0,0,0,0,0,0,0,0],
+					   [0,0,0,0,0,0,0,0,0],
+					   [0,0,0,0,0,0,0,0,0],
+					   [0,0,0,0,0,0,0,0,0],
+					   [0,0,0,0,0,0,0,0,0],
+					   [0,0,0,0,0,0,0,0,0],
+					   [0,0,0,0,0,0,0,0,0]]
+					   				   
+	
+	def update_value(self, column, row, value):
+		print(row, column)
+		print(row+1, column+1)
+		self.sudoku[row][column] = int(value)
+		print(self.sudoku[row][column])
+		self.printSudoku()
+		
+	def find_possible_digits(self, row, column):
+		possible = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+		
+		for i in range(9):
+			if self.sudoku[row][i] != 0:
+				if self.sudoku[row][i] in possible:
+					possible.remove(self.sudoku[row][i])
+
+		for i in range(9):
+			if self.sudoku[i][column] !=  0:
+				if self.sudoku[i][column] in possible:
+					possible.remove(self.sudoku[i][column])
+
+		
+		r0 = row - row%3
+		r1 = r0 + 3
+		k0 = column - column%3
+		k1 = k0 + 3
+		
+		while r0 < r1:
+			while k0 < k1:
+				if self.sudoku[r0][k0] != 0:
+					if self.sudoku[r0][k0] in possible:
+						possible.remove(self.sudoku[r0][k0])
+				k0+=1
+			r0+=1
+
+		return possible
+
+	def solve_sudoku_recursion(self, row, column):		 
+		if row == 9:
+			return True
+
+		if column < 8:
+			r = row
+			k = column+1
+
+		else:
+			r = row+1
+			k = 0
+
+		if self.sudoku[row][column] != 0:
+			return self.solve_sudoku_recursion(r, k)
+
+		for digit in range(1,10):
+			options = self.find_possible_digits(row, column)
+			if digit in options:
+				self.sudoku[row][column] = digit
+				if self.solve_sudoku_recursion(r, k):
+					return True
+				
+			self.sudoku[row][column] = 0
+
+
+	def solve_sudoku_no_recursion(self):
+		while any(0 in sublist for sublist in self.sudoku):
+			changes = 0
+			for row in range(9):
+				for column in range(9):
+					if self.sudoku[row][column] == 0:
+						possible = self.find_possible_digits(row, column)
+						if len(possible) == 1:
+							self.sudoku[row][column] = possible[0]
+							changes += 1
+			if changes == 0:
+				break
+		if any(0 in sublist for sublist in self.sudoku):
+			self.solve_sudoku_recursion(0, 0)
+							
+	def printSudoku(self):
+		print(self.sudoku)
+	
+	def return_value(self, row, column):
+		return self.sudoku[row][column]
+
+
 ### CREATING THE GRID OF THE SUDOKU
 global buttons
 buttons = []
@@ -40,87 +137,30 @@ class Current():
 		self.current_button_row = j
 
 current_button = Current()
+sudoku = Sudoku()
 
 def onClick(i):
 	current_button.update(int(i[0])-1, int(i[1])-1)
 	
+	
 for i in range(1, 10):
 	buttons_column = []
 	for j in range(1, 10):
-		#b = Tkinter.Button(win, height=10, width=100, command=lambda i=i: onClick(i))
 		str_pos = str(i) + str(j)
-		b = Button(root, height=4, width=8, text = str((i, j)), command = lambda str_pos=str_pos: onClick(str_pos))
+		b = Button(root, height=4, width=8, text = int(0), command = lambda str_pos=str_pos: onClick(str_pos))
 		b.place(x=i*80, y=j*80)
-		print(i*80, j*80)
-		#b.pack()
 		buttons_column.append(b)
 	buttons.append(buttons_column)
 
-#column, row
-buttons[0][4]['text'] = '1'
 
-
-
-def check_mono(signal):
-	if signal.ndim == 1:
-		return True
-	else:
-		return False
-
-def convert_to_mono(signal):
-	#if the signal is already mono, we return the original signal
-	if check_mono(signal) == True:
-		return signal
-	else:
-		#create a new numpy array filled with 0s with the length of the original signal
-		new_array = np.zeros(len(signal))
-		#we'll add the average of the two stereo channels to our new array
-		for i in range(len(signal)):
-			new_array[i] += signal[i][0]/2 + signal[i][1]/2
-		#return our newly created mono signal
-		return new_array
-
-def cut_silence(data, threshold = 0.1 , audio_length = 132300):
-	min_val = threshold * max(abs(data))
-	start_audio_pos = 0
-	end_audio_pos = 0
-
-	for i in range(len(data)):
-		if data[i] > min_val:
-			start_audio_pos = i
-			break
-
-	#Here we do the same thing, but we start at the end
-	for i in range(len(data)-1, 0, -1):
-		if data[i] > min_val:
-			end_audio_pos = i+1
-			break
-  
-	#Cut out the silence from the data
-	data = data[start_audio_pos : end_audio_pos]
-	print(data.shape)
-	padding_length = audio_length - len(data)
-	if padding_length % 2 == 0:
-		padding_length = int(padding_length/2)
-		data = np.pad(data, (padding_length, padding_length))
-	else:
-		padding_length = int(padding_length/2)
-		data = np.pad(data, (padding_length, padding_length+1))
-	
-	return data
 
 
 import pickle
-from sklearn.model_selection import GridSearchCV
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
 
 #OPEN MODEL
 with open('model_hmm2.pkl', 'rb') as f:
 	hmmModels = pickle.load(f)
 
-	
-from at16k.api import SpeechToText
 
 #https://github.com/msnmkh/Spoken-Digit-Recognition/blob/master/SDR.py
 
@@ -133,7 +173,7 @@ def record_audio():
 	sd.wait()  # Wait until recording is finished
 	write('output.wav', fs, my_recording)  # Save as WAV file 
 	
-	wave, sample_rate =  librosa.load('output.wav')
+	wave, sample_rate =	 librosa.load('output.wav')
 	mfcc_features = mfcc(wave, sample_rate).T
 	
 	#mfcc_features = mfcc(my_recording, fs)
@@ -143,43 +183,34 @@ def record_audio():
 		score = model.score(mfcc_features)
 		scoreList[model_label] = score
 	predict = max(scoreList, key=scoreList.get)
-	
-	
-	#sd.wait()
-	
-	#STT = SpeechToText('en_16k')
-	#results = STT('output.wav')
-	
 	buttons[current_button.current_button_col][current_button.current_button_row]['text'] = predict
-	
-	#print("This is the solution:")
-	#print(results['text'])
-	
-	
-	#my_recording = convert_to_mono(my_recording)
-	#my_recording = cut_silence(my_recording)
-	
-	#arr = []
-	#arr.append(my_recording)
-	#arr = np.array(arr)
-	#print(arr.shape)
-	
-	#solution = clf2.predict(arr)
-	
-	
-	#TRY TO ESTIMATE THE NUMBER
-	#UPDATE THE NUMBER
-	
-	
-	
-	#print("Finished recording :)")
-	
+	sudoku.update_value(current_button.current_button_col, current_button.current_button_row, predict)
 
 button_rec = Button(root, text='Record audio', command=record_audio)
 button_rec.place(x=800, y=400)
 
+def solve_sudoku():	
+	#column, row
+	sudoku.printSudoku()
+	sudoku.solve_sudoku_no_recursion()
+	sudoku.printSudoku()
+	
+	for i in range(9):
+		for j in range(9):
+			buttons[i][j]['text'] = sudoku.return_value(j, i)
+	
+button_solve = Button(root, text='Solve sudoku', command=solve_sudoku)
+button_solve.place(x=800, y=500)
 
-
+value = StringVar()
+ 
+def submit():
+	number = value.get()
+	buttons[current_button.current_button_col][current_button.current_button_row]['text'] = number
+	sudoku.update_value(current_button.current_button_col, current_button.current_button_row, number)
+ 
+value_entry = Entry(root,textvariable = value, font=('calibre',10,'normal')).place(x=900, y=450)
+sub_btn=Button(root,text = 'Manual override', command = submit).place(x=920, y=480)
 
 
 root.mainloop()
