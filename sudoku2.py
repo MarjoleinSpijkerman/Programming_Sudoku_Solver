@@ -139,6 +139,25 @@ class Current():
 current_button = Current()
 sudoku = Sudoku()
 
+
+canvas = Canvas(root, width=root.winfo_screenwidth(), height=root.winfo_screenheight(), 
+                   borderwidth=0, highlightthickness=0)
+canvas.create_line((75, 75), (795, 75), width=4)
+canvas.create_line((75, 315), (795, 315), width=4)
+canvas.create_line((75, 555), (795, 555), width=4)
+canvas.create_line((75, 795), (795, 795), width=4)
+
+canvas.create_line((75, 75), (75, 795), width=4)
+canvas.create_line((315, 75), (315, 795), width=4)
+canvas.create_line((555, 75), (555, 795), width=4)
+canvas.create_line((795, 75), (795, 795), width=4)
+
+
+canvas.pack()
+
+
+#root.geometry("%dx%d+0+0" % (RWidth, RHeight))
+
 def onClick(i):
 	current_button.update(int(i[0])-1, int(i[1])-1)
 	
@@ -211,6 +230,9 @@ def submit():
  
 value_entry = Entry(root,textvariable = value, font=('calibre',10,'normal')).place(x=900, y=450)
 sub_btn=Button(root,text = 'Manual override', command = submit).place(x=920, y=480)
+
+
+
 
 
 root.mainloop()
